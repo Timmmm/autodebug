@@ -1,4 +1,4 @@
-import { Event, Disposable } from 'vscode';
+import { Event, Disposable } from "vscode";
 
 export interface IDisposable {
 	dispose(): void;
