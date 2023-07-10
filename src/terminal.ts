@@ -33,7 +33,7 @@ export class TerminalEnvironmentManager {
 			const terminalEnv = envProvider?.getTerminalEnv() ?? {};
 
 			for (const name of Object.keys(terminalEnv)) {
-				this.context.environmentVariableCollection.replace(name, terminalEnv[name]);
+				this.context.environmentVariableCollection.replace(name, terminalEnv[name]!);
 			}
 		}
 	}
