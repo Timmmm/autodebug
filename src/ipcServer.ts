@@ -70,7 +70,6 @@ export interface IIPCServer extends Disposable {
 }
 
 export interface ITerminalEnvironmentProvider {
-	featureDescription?: string;
 	getTerminalEnv(): { [key: string]: string };
 }
 

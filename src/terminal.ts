@@ -7,7 +7,6 @@ import { ExtensionContext, l10n, workspace } from "vscode";
 import { filterEvent, IDisposable } from "./util";
 
 export interface ITerminalEnvironmentProvider {
-	featureDescription?: string;
 	getTerminalEnv(): { [key: string]: string };
 }
 
@@ -30,19 +29,12 @@ export class TerminalEnvironmentManager {
 			return;
 		}
 
-		const features: string[] = [];
 		for (const envProvider of this.envProviders) {
 			const terminalEnv = envProvider?.getTerminalEnv() ?? {};
 
 			for (const name of Object.keys(terminalEnv)) {
 				this.context.environmentVariableCollection.replace(name, terminalEnv[name]);
 			}
-			if (envProvider?.featureDescription && Object.keys(terminalEnv).length > 0) {
-				features.push(envProvider.featureDescription);
-			}
-		}
-		if (features.length) {
-			this.context.environmentVariableCollection.description = l10n.t("Enables the following features: {0}", features.join(", "));
 		}
 	}
 
