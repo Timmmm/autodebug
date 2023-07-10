@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Disposable } from "vscode";
+import { Disposable, debug } from "vscode";
 import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
@@ -84,14 +84,17 @@ export class IPCServer implements IIPCServer, ITerminalEnvironmentProvider, Disp
 		this.server.on("connection", socket => this.onConnection(socket));
 	}
 
+	// TODO: Use this?
 	registerHandler(name: string, handler: IIPCHandler): Disposable {
 		this.handlers.set(`/${name}`, handler);
 		return toDisposable(() => this.handlers.delete(name));
 	}
 
 	private onConnection(socket: net.Socket): void {
-		// socket.addListener("error", ...); // TODO
+		// TODO: Make a Client class, otherwise if multiple things connect
+		// at the same time it will break.
 		socket.addListener("data", data => this.onData(data));
+		//socket.addListener("error", ); // TODO
 	}
 
 	private onData(data: Buffer): void {
@@ -106,32 +109,9 @@ export class IPCServer implements IIPCServer, ITerminalEnvironmentProvider, Disp
 	}
 
 	private onRequest(req: string): void {
-		console.log(`got request: ${req}`);
-	// 	if (!req.url) {
-	// 		console.warn(`Request lacks url`);
-	// 		return;
-	// 	}
-
-	// 	const handler = this.handlers.get(req.url);
-
-	// 	if (!handler) {
-	// 		console.warn(`IPC handler for ${req.url} not found`);
-	// 		return;
-	// 	}
-
-	// 	const chunks: Buffer[] = [];
-	// 	req.on("data", d => chunks.push(d));
-	// 	req.on("end", () => {
-	// 		const request = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-	// 		handler.handle(request).then(result => {
-	// 			res.writeHead(200);
-	// 			res.end(JSON.stringify(result));
-	// 		}, () => {
-	// 			res.writeHead(500);
-	// 			res.end();
-	// 		});
-	// 	});
-	// }
+		console.log(`autodebug request: ${req}`);
+		const config = JSON.parse(req);
+		debug.startDebugging(undefined, config);
 	}
 
 	getEnv(): { [key: string]: string } {
