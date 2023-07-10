@@ -62,8 +62,7 @@ static void vscode_debug_send_pid() {
     }
     if (written != len) {
         // Interrupted due to e.g. signal.
-        fprintf(stderr, "autodebug: write to VSCode failed\n");
-        // TODO: Handle this & resume.
+        fprintf(stderr, "autodebug: write to VSCode interrupted\n");
         return;
     }
 
