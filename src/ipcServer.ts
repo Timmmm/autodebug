@@ -63,17 +63,11 @@ export async function createIPCServer(context?: string): Promise<IPCServer> {
 	});
 }
 
-export interface IIPCServer extends Disposable {
-	readonly ipcHandlePath: string | undefined;
-	getEnv(): { [key: string]: string };
-	registerHandler(name: string, handler: IIPCHandler): Disposable;
-}
-
 export interface ITerminalEnvironmentProvider {
 	getTerminalEnv(): { [key: string]: string };
 }
 
-export class IPCServer implements IIPCServer, ITerminalEnvironmentProvider, Disposable {
+export class IPCServer implements ITerminalEnvironmentProvider, Disposable {
 
 	private handlers = new Map<string, IIPCHandler>();
 	get ipcHandlePath(): string { return this._ipcHandlePath; }
@@ -120,11 +114,6 @@ export class IPCServer implements IIPCServer, ITerminalEnvironmentProvider, Disp
 		} catch (e) {
 			console.log(`error starting debug: ${e}`);
 		}
-	}
-
-	getEnv(): { [key: string]: string } {
-		// eslint-disable-next-line @typescript-eslint/naming-convention
-		return { AUTODEBUG_IPC_HANDLE: this.ipcHandlePath };
 	}
 
 	getTerminalEnv(): { [key: string]: string } {
