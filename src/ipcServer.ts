@@ -5,18 +5,13 @@
 
 import { Disposable } from "vscode";
 import * as path from "path";
-import * as http from "http";
 import * as os from "os";
 import * as fs from "fs";
+import * as net from "net";
 import * as crypto from "crypto";
+import { toDisposable } from "./util";
 
-export interface IDisposable {
-	dispose(): void;
-}
 
-export function toDisposable(dispose: () => void): IDisposable {
-	return { dispose };
-}
 
 function getIPCHandlePath(id: string): string {
 	if (process.platform === "win32") {
@@ -34,8 +29,9 @@ export interface IIPCHandler {
 	handle(request: any): Promise<any>;
 }
 
+// `context` is fed into a hash to make the random IPC socket name.
 export async function createIPCServer(context?: string): Promise<IPCServer> {
-	const server = http.createServer();
+	const server = net.createServer();
 	const hash = crypto.createHash("sha1");
 
 	if (!context) {
@@ -82,8 +78,8 @@ export class IPCServer implements IIPCServer, ITerminalEnvironmentProvider, Disp
 	private handlers = new Map<string, IIPCHandler>();
 	get ipcHandlePath(): string { return this._ipcHandlePath; }
 
-	constructor(private server: http.Server, private _ipcHandlePath: string) {
-		this.server.on("request", this.onRequest.bind(this));
+	constructor(private server: net.Server, private _ipcHandlePath: string) {
+		this.server.on("connection", socket => this.onConnection(socket));
 	}
 
 	registerHandler(name: string, handler: IIPCHandler): Disposable {
@@ -91,32 +87,41 @@ export class IPCServer implements IIPCServer, ITerminalEnvironmentProvider, Disp
 		return toDisposable(() => this.handlers.delete(name));
 	}
 
-	private onRequest(req: http.IncomingMessage, res: http.ServerResponse): void {
-		if (!req.url) {
-			console.warn(`Request lacks url`);
-			return;
-		}
-
-		const handler = this.handlers.get(req.url);
-
-		if (!handler) {
-			console.warn(`IPC handler for ${req.url} not found`);
-			return;
-		}
-
-		const chunks: Buffer[] = [];
-		req.on("data", d => chunks.push(d));
-		req.on("end", () => {
-			const request = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-			handler.handle(request).then(result => {
-				res.writeHead(200);
-				res.end(JSON.stringify(result));
-			}, () => {
-				res.writeHead(500);
-				res.end();
-			});
-		});
+	private onConnection(socket: net.Socket): void {
+		// socket.addListener("error", ...); // TODO
+		socket.addListener("data", data => this.onData(data));
 	}
+
+	private onData(data: Buffer): void {
+
+	}
+
+	// private onRequest(req: net.IncomingMessage, res: http.ServerResponse): void {
+	// 	if (!req.url) {
+	// 		console.warn(`Request lacks url`);
+	// 		return;
+	// 	}
+
+	// 	const handler = this.handlers.get(req.url);
+
+	// 	if (!handler) {
+	// 		console.warn(`IPC handler for ${req.url} not found`);
+	// 		return;
+	// 	}
+
+	// 	const chunks: Buffer[] = [];
+	// 	req.on("data", d => chunks.push(d));
+	// 	req.on("end", () => {
+	// 		const request = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+	// 		handler.handle(request).then(result => {
+	// 			res.writeHead(200);
+	// 			res.end(JSON.stringify(result));
+	// 		}, () => {
+	// 			res.writeHead(500);
+	// 			res.end();
+	// 		});
+	// 	});
+	// }
 
 	getEnv(): { [key: string]: string } {
 		// eslint-disable-next-line @typescript-eslint/naming-convention
