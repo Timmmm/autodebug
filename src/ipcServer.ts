@@ -78,6 +78,8 @@ export class IPCServer implements IIPCServer, ITerminalEnvironmentProvider, Disp
 	private handlers = new Map<string, IIPCHandler>();
 	get ipcHandlePath(): string { return this._ipcHandlePath; }
 
+	private pendingData: string = "";
+
 	constructor(private server: net.Server, private _ipcHandlePath: string) {
 		this.server.on("connection", socket => this.onConnection(socket));
 	}
@@ -93,10 +95,18 @@ export class IPCServer implements IIPCServer, ITerminalEnvironmentProvider, Disp
 	}
 
 	private onData(data: Buffer): void {
-
+		const dataStr = data.toString("utf8");
+		this.pendingData += dataStr;
+		const newline = this.pendingData.indexOf("\n");
+		if (newline !== -1) {
+			const req = this.pendingData.slice(0, newline);
+			this.pendingData = this.pendingData.slice(newline+1);
+			this.onRequest(req);
+		}
 	}
 
-	// private onRequest(req: net.IncomingMessage, res: http.ServerResponse): void {
+	private onRequest(req: string): void {
+		console.log(`got request: ${req}`);
 	// 	if (!req.url) {
 	// 		console.warn(`Request lacks url`);
 	// 		return;
@@ -122,6 +132,7 @@ export class IPCServer implements IIPCServer, ITerminalEnvironmentProvider, Disp
 	// 		});
 	// 	});
 	// }
+	}
 
 	getEnv(): { [key: string]: string } {
 		// eslint-disable-next-line @typescript-eslint/naming-convention
