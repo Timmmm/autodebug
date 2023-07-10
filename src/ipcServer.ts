@@ -3,14 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Disposable, debug } from "vscode";
+import { Disposable, debug, window } from "vscode";
 import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
 import * as net from "net";
 import * as crypto from "crypto";
-import { toDisposable } from "./util";
-
+import { ITerminalEnvironmentProvider } from "./terminal";
 
 
 function getIPCHandlePath(id: string): string {
@@ -23,10 +22,6 @@ function getIPCHandlePath(id: string): string {
 	}
 
 	return path.join(os.tmpdir(), `autodebug-${id}.sock`);
-}
-
-export interface IIPCHandler {
-	handle(request: any): Promise<any>;
 }
 
 // `context` is fed into a hash to make the random IPC socket name.
@@ -63,35 +58,13 @@ export async function createIPCServer(context?: string): Promise<IPCServer> {
 	});
 }
 
-export interface ITerminalEnvironmentProvider {
-	getTerminalEnv(): { [key: string]: string };
-}
-
-export class IPCServer implements ITerminalEnvironmentProvider, Disposable {
-
-	private handlers = new Map<string, IIPCHandler>();
-	get ipcHandlePath(): string { return this._ipcHandlePath; }
-
+class IPCConnection {
 	private pendingData: string = "";
 
-	constructor(private server: net.Server, private _ipcHandlePath: string) {
-		this.server.on("connection", socket => this.onConnection(socket));
-	}
-
-	// TODO: Use this?
-	registerHandler(name: string, handler: IIPCHandler): Disposable {
-		this.handlers.set(`/${name}`, handler);
-		return toDisposable(() => this.handlers.delete(name));
-	}
-
-	private onConnection(socket: net.Socket): void {
-		console.log("autodebug connection");
-		// TODO: Make a Client class, otherwise if multiple things connect
-		// at the same time it will break.
-		socket.addListener("data", data => this.onData(data));
-		socket.addListener("error", err => {
-			// TODO: Show error to the user.
-			console.error(err);
+	constructor(private socket: net.Socket) {
+		this.socket.addListener("data", data => this.onData(data));
+		this.socket.addListener("error", err => {
+			window.showErrorMessage(`Autodebug connection error: ${err}`);
 		});
 	}
 
@@ -107,13 +80,32 @@ export class IPCServer implements ITerminalEnvironmentProvider, Disposable {
 	}
 
 	private onRequest(req: string): void {
-		console.log(`autodebug request3: ${req}`);
+		console.log(`autodebug request: ${req}`);
 		try {
 			const config = JSON.parse(req);
 			debug.startDebugging(undefined, config);
 		} catch (e) {
-			console.log(`error starting debug: ${e}`);
+			window.showErrorMessage(`Autodebug error starting session: ${e}`);
 		}
+	}
+}
+
+export class IPCServer implements ITerminalEnvironmentProvider, Disposable {
+
+	private clients: Set<IPCConnection> = new Set();
+	get ipcHandlePath(): string { return this._ipcHandlePath; }
+
+	constructor(private server: net.Server, private _ipcHandlePath: string) {
+		this.server.on("connection", socket => this.onConnection(socket));
+	}
+
+	private onConnection(socket: net.Socket): void {
+		console.log("autodebug connection");
+		const connection = new IPCConnection(socket);
+		this.clients.add(connection);
+		socket.addListener("close", () => {
+			this.clients.delete(connection);
+		});
 	}
 
 	getTerminalEnv(): { [key: string]: string } {
@@ -122,7 +114,7 @@ export class IPCServer implements ITerminalEnvironmentProvider, Disposable {
 	}
 
 	dispose(): void {
-		this.handlers.clear();
+		this.clients.clear();
 		this.server.close();
 
 		if (this._ipcHandlePath && process.platform !== "win32") {
