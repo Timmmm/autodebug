@@ -1,7 +1,5 @@
-/*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
+// Based on VSCode's `extensions/git/src/terminal.ts` 293e46b36015307d159b3ea38ec8dbe534be9c76
+// Copyright Microsoft, used under MIT license.
 
 import { ExtensionContext, workspace } from "vscode";
 import { filterEvent, IDisposable } from "./util";

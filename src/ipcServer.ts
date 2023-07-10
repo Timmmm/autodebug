@@ -1,7 +1,5 @@
-/*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
+// Based on VSCode's `extensions/git/src/ipc/ipcServer.ts` 293e46b36015307d159b3ea38ec8dbe534be9c76
+// Copyright Microsoft, used under MIT license.
 
 import { Disposable, debug, window } from "vscode";
 import * as path from "path";
