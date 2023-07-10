@@ -35,6 +35,7 @@ export async function createIPCServer(context?: string): Promise<IPCServer> {
 	const hash = crypto.createHash("sha1");
 
 	if (!context) {
+		console.warn("No context given to autodebug");
 		const buffer = await new Promise<Buffer>((c, e) => crypto.randomBytes(20, (err, buf) => err ? e(err) : c(buf)));
 		hash.update(buffer);
 	} else {
@@ -91,10 +92,14 @@ export class IPCServer implements IIPCServer, ITerminalEnvironmentProvider, Disp
 	}
 
 	private onConnection(socket: net.Socket): void {
+		console.log("autodebug connection");
 		// TODO: Make a Client class, otherwise if multiple things connect
 		// at the same time it will break.
 		socket.addListener("data", data => this.onData(data));
-		//socket.addListener("error", ); // TODO
+		socket.addListener("error", err => {
+			// TODO: Show error to the user.
+			console.error(err);
+		});
 	}
 
 	private onData(data: Buffer): void {
@@ -109,9 +114,13 @@ export class IPCServer implements IIPCServer, ITerminalEnvironmentProvider, Disp
 	}
 
 	private onRequest(req: string): void {
-		console.log(`autodebug request: ${req}`);
-		const config = JSON.parse(req);
-		debug.startDebugging(undefined, config);
+		console.log(`autodebug request3: ${req}`);
+		try {
+			const config = JSON.parse(req);
+			debug.startDebugging(undefined, config);
+		} catch (e) {
+			console.log(`error starting debug: ${e}`);
+		}
 	}
 
 	getEnv(): { [key: string]: string } {

@@ -28,6 +28,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	const terminalEnvironmentManager = new TerminalEnvironmentManager(context, [ipcServer]);
 	context.subscriptions.push(terminalEnvironmentManager);
+
+	console.log("Autodebug extension running");
 }
 
 // This method is called when your extension is deactivated

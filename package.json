@@ -2,6 +2,7 @@
   "name": "autodebug",
   "displayName": "autodebug",
   "description": "Automatically start debug sessions",
+  "publisher": "timhutt",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.79.0"
@@ -18,7 +19,7 @@
       {
         "title": "Autodebug",
         "properties": {
-          "autodebug.enable": {
+          "autodebug.enabled": {
             "type": "boolean",
             "default": true,
             "description": "Enable/disable the extension entirely"

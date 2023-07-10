@@ -8,11 +8,20 @@
 
 __attribute__((constructor))
 static void vscode_debug_send_pid() {
+    // If debugging is enabled. This is so you can just permanently link this.
+    const char* enable = getenv("CPP_DEBUG");
+    if (!enable) {
+        return;
+    }
+
     // Get the Unix socket path to connect to.
     const char* handle = getenv("AUTODEBUG_IPC_HANDLE");
     if (!handle) {
+        fprintf(stderr, "autodebug: socket path not set; there should be a AUTODEBUG_IPC_HANDLE env var - try restarting the terminal\n");
         return;
     }
+
+    fprintf(stderr, "autodebug: starting debug session\n");
 
     // Create a socket.
     int sfd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -25,7 +34,11 @@ static void vscode_debug_send_pid() {
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, handle, sizeof(addr.sun_path) - 1);
+    strncpy(addr.sun_path, handle, sizeof(addr.sun_path));
+    if (addr.sun_path[sizeof(addr.sun_path)-1] != '\0') {
+        fprintf(stderr, "autodebug: socket path too long\n");
+        return;
+    }
 
     int rc = connect(sfd, (struct sockaddr *) &addr, sizeof(struct sockaddr_un));
     if (rc == -1) {
@@ -34,10 +47,10 @@ static void vscode_debug_send_pid() {
     }
 
     char buffer[1024];
-    int len = snprintf(buffer, sizeof(buffer), "{ pid: %d }\n", getpid());
+    int len = snprintf(buffer, sizeof(buffer), "{ \"type\": \"lldb\", \"request\": \"attach\", \"pid\": %d }\n", getpid());
     if (len >= sizeof(buffer)) {
         // It was truncated and there's no null byte.
-        // TODO: Print error.
+        fprintf(stderr, "autodebug: debug config setup failed\n");
         return;
     }
 
@@ -49,8 +62,8 @@ static void vscode_debug_send_pid() {
     }
     if (written != len) {
         // Interrupted due to e.g. signal.
+        fprintf(stderr, "autodebug: write to VSCode failed\n");
         // TODO: Handle this & resume.
-        // TODO: Print error.
         return;
     }
 
