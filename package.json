@@ -9,13 +9,21 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "*"
+  ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
+    "configuration": [
       {
-        "command": "autodebug.helloWorld",
-        "title": "Hello World"
+        "title": "Autodebug",
+        "properties": {
+          "autodebug.enable": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable/disable the extension entirely"
+          }
+        }
       }
     ]
   },
