@@ -3,7 +3,7 @@
   "displayName": "autodebug",
   "description": "Automatically start debug sessions",
   "publisher": "timhutt",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.79.0"
   },

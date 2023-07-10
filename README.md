@@ -8,9 +8,9 @@ It works like this:
 2. In your program, YOU add code to read the environment variable and send a debug session command to the Unix socket.
 3. The extension starts the debug session.
 
-## Features
+**SECURITY NOTE**
 
-TODO: Animation of it working.
+This extension listens on a Unix socket and executes debug session configs that are sent on that socket. Those can run any program. This should not really matter since anyone that can connect to a Unix socket of the current user can probably run any program anyway, but it is a little icky.
 
 ## Extension Settings
 
